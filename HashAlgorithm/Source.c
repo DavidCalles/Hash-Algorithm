@@ -1,30 +1,57 @@
-/*******************************************************************************
-* File Name          : hashAssignmentV3.cpp
-* Description        : Implemenation of a hash skelleton
+/*****************************************************************************
+* File Name          : Source.c
+* Description        : Implemenation of hash table basic management functions:
+*						- ADD to hash table
+*						- SEARCH in hash table
+*						- PRINT whole hash table
 *
-* Author:              PROG8130 / ???
-* Date:                Nov 24, 2021
+* Author:              PROG8130 / David Calles
+* Date:                Dec 12, 2021
 ******************************************************************************
 */
 
+/*****************************************************************************
+* ------------------------------ LIBRARIES ----------------------------------*
+******************************************************************************/
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
 
-unsigned int myHashFunction(char*);						// Implementation of hash algorithm
-unsigned int putIntoHashTable(char* , unsigned int);    // function to add to hash table
-unsigned int getFromHashTable(char* , unsigned int);	// function to retrieve data from hash table
+/*****************************************************************************
+* ------------------------------- DEFINES -----------------------------------*
+******************************************************************************/
 
 #define INPUT_BUFFER_SIZE 200	// local buffer used for adding data to the hash table
 #define HASH_SIZE 10			// size of hash table to be used
 
+/*****************************************************************************
+* ------------------------ DATATYPE DEFINITIONS -----------------------------*
+******************************************************************************/
+
 // data structure used to keep track of hashed data
 typedef struct myHashStruct {
 	char* ptrBuffer;                       // pointer to data stored in hash 
-	struct myHashStruct* ptrNextHashData;  // pointer to next item in this hash bucket (or NULL if no more)
+	struct myHashStruct* ptrNextHashData;  // pointer to next item in this hash bucket
 }HASH_ELEMENT;
 
-HASH_ELEMENT* myHash[HASH_SIZE];           // create an empty hash table structure (note this is basically an arrary of linked list heads)
+/*****************************************************************************
+* --------------------- PRIVATE FUNCTION PROTOTYPES -------------------------*
+******************************************************************************/
+
+unsigned int	myHashFunction(char*);						// Implementation of hash algorithm
+unsigned int	putIntoHashTable(char*, unsigned int);		// function to add to hash table
+unsigned int	getFromHashTable(char*, unsigned int);		// function to retrieve data from hash table
+void			printHashTable(HASH_ELEMENT**);				// Printf whole hash table
+
+/*****************************************************************************
+* --------------------------- GLOBAL VARIABLES ------------------------------*
+******************************************************************************/
+
+HASH_ELEMENT* myHash[HASH_SIZE];           // empty hash table structure
+
+/*****************************************************************************
+* ---------------------------- MAIN FUNCTION --------------------------------*
+******************************************************************************/
 
 int main()
 {
@@ -44,10 +71,10 @@ int main()
 		}
 	}
 
-	// add to hash table loop
+	// ----------------------- WRITE to table MODE
 	while (1)
 	{
-		printf("enter data to be added to hash table or exit when done\n");
+		printf("Enter data to be added to hash table or (exit) when done\n");
 
 		// get strings from the console and place in hash until nothing entered
 		scanf_s("%199s", inputBuffer, INPUT_BUFFER_SIZE);
@@ -57,11 +84,16 @@ int main()
 		if (strcmp(inputBuffer, "exit") == 0)
 			break;
 
-		if (putIntoHashTable(inputBuffer, strlen(inputBuffer)) == HASH_SIZE)
-			printf("Error putting into hash table\n");
+		// Print whole table at any given time
+		if (strcmp(inputBuffer, "print") == 0)
+			printHashTable(myHash);
+		else {
+			if (putIntoHashTable(inputBuffer, strlen(inputBuffer)) == HASH_SIZE)
+				printf("Error putting into hash table\n");
+		}		
 	}
 
-	// check if data is in hash table
+	// ----------------------- READ to table MODE
 	while (1)
 	{
 		unsigned int hashIndexNumber = 0;
@@ -76,14 +108,20 @@ int main()
 		if (strcmp(inputBuffer, "done") == 0)
 			break;
 
-		if ((hashIndexNumber = getFromHashTable(inputBuffer, strlen(inputBuffer))) == HASH_SIZE)
-			printf("%s not found in hash table\n", inputBuffer);
-		else
-			printf("%s found in hash table at %u\n", inputBuffer, hashIndexNumber);
+		// Print whole table at any given time
+		if (strcmp(inputBuffer, "print") == 0)
+			printHashTable(myHash);
+		else {
+			if ((hashIndexNumber = getFromHashTable(inputBuffer, strlen(inputBuffer))) == HASH_SIZE)
+				printf("%s not found in hash table\n", inputBuffer);
+			else
+				printf("%s found in hash table at %u\n", inputBuffer, hashIndexNumber);
+		}		
 	}
 
 	return 0;
 }
+
 
 // FUNCTION      : myHashFunction
 // DESCRIPTION   :
@@ -143,7 +181,7 @@ unsigned int putIntoHashTable(char* ptrInputData, unsigned int bufferLength)
 		// Check if value is already in hash table
 		if (current->ptrBuffer != NULL) {
 			if (strcmp(current->ptrBuffer, ptrInputData) == 0) {
-				printf("Input already in hash table. \n");
+				printf("Input already in hash table. \n\n");
 				return HASH_SIZE;
 			}
 			else {
@@ -167,7 +205,7 @@ unsigned int putIntoHashTable(char* ptrInputData, unsigned int bufferLength)
 					newElement->ptrNextHashData = NULL;
 					// Chain it to linked list
 					current->ptrNextHashData = newElement;
-					printf("New element in index added succesfully\n");
+					printf("New element in index added succesfully\n\n");
 					return inputHashValue;
 				}
 				else {
@@ -190,7 +228,7 @@ unsigned int putIntoHashTable(char* ptrInputData, unsigned int bufferLength)
 			strcpy_s(newbuffer, bufferLength+1, ptrInputData);
 			current->ptrBuffer = newbuffer;
 			current->ptrNextHashData = NULL;
-			printf("First element in index added succesfully.\n");
+			printf("First element in index added succesfully.\n\n");
 			return inputHashValue;
 		}
 	}	
@@ -243,9 +281,46 @@ unsigned int getFromHashTable(char* ptrOutputData, unsigned int bufferLength)
 		
 	}
 	// Means the linked list does not contain the desired value
-	printf("Element not in linked list."
+	printf("Element not in linked list.\n"
 			"Calculated hash: %d, Items searched in index: %d. \n", hashValue, chainCounter);
 
 	return HASH_SIZE;
 }
- 
+// FUNCTION      : printHashTable
+// DESCRIPTION   :
+//   Print whole hash table
+// PARAMETERS    :
+//  hashArray	pointer to the first element in hash table (pointer to pointers array)
+//
+// RETURNS       :
+//  (the hash table is printed entirely)
+
+void printHashTable(HASH_ELEMENT** hashArray) {
+
+	HASH_ELEMENT* current;
+	printf("\n");
+	// Iterate through all hash heads
+	for (unsigned int i = 0; i < HASH_SIZE; i++) {
+		printf("# %d - ", i);
+		current = hashArray[i];
+		// Loop the linked list
+		while (current != NULL)
+		{
+			// The no elements in this hash index
+			if (current->ptrBuffer == NULL) {
+				printf("(Empty)\n");
+				break;
+			}
+			else {
+				// Element found, print and go next
+				printf("%s - ", current->ptrBuffer);
+				if (current->ptrNextHashData == NULL) {
+					printf("(End)\n");
+				}
+				current = current->ptrNextHashData;
+			}
+		}
+	}
+	printf("\n");
+
+}
